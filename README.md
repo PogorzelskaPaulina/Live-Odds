@@ -1,70 +1,116 @@
-# React + TypeScript + Vite
+# Live Football World Cup Scoreboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React-based live scoreboard application for managing football matches in real-time. Built with TypeScript, Vite, and modern React patterns.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js (v24.3.0)
+- npm
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Installation & Commands
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Install dependencies
+npm install
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+# Start development server
+npm run dev
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Run tests
+npm test
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Given requirements:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Start a new match, assuming initial score 0 – 0 and adding it the scoreboard.
+   This should capture following parameters:
+   a. Home team
+   b. Away team
+2. Update score. This should receive a pair of absolute scores: home team score and away
+   team score.
+3. Finish match currently in progress. This removes a match from the scoreboard.
+4. Get a summary of matches in progress ordered by their total score. The matches with the
+   same total score will be returned ordered by the most recently started match in the
+   scoreboard.
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Assumptions and Implicit Requirements
+
+- Scores cannot be of negative value
+- There is no limit to how high score can get (but possibly we would wanna extend app in the future by some limit)
+- We assume that the same characters in the provided team names, regardless of whether they are uppercase or lowercase letters, represent the same team — that is, team names are matched case-insensitively
+- We don't implement a mechanism for removing matches from the scoreboard when it's finished automatically after time passed taking into account "We don't expect the solution to be a REST API, command line application, a Web Service, or Microservice
+
+### Using the Hook for Custom UI
+
+```tsx
+import { useScoreboard } from "live-scoreboard";
+
+function CustomScoreboard() {
+  const { matches, startMatch, updateScore, finishMatch } = useScoreboard();
+
+  return (
+    <div>
+      <h2>Live Matches</h2>
+      {matches.map((match) => (
+        <div key={match.id}>
+          {match.homeTeam} {match.homeScore} - {match.awayScore}{" "}
+          {match.awayTeam}
+          <button
+            onClick={() =>
+              updateScore({
+                matchId: match.id,
+                homeScore: match.homeScore + 1,
+                awayScore: match.awayScore,
+              })
+            }
+          >
+            Home Goal
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
 ```
-# Live-Odds
+
+### Using Components
+
+```tsx
+import {
+  ScoreboardComponent,
+  AddNewMatch,
+  ScoreboardList,
+} from "live-scoreboard";
+
+// Complete scoreboard with all UI
+function App() {
+  return <ScoreboardComponent />;
+}
+
+// Or use individual components
+function CustomApp() {
+  const { matches, startMatch, updateScore, finishMatch } = useScoreboard();
+
+  return (
+    <div>
+      <AddNewMatch onMatchStart={startMatch} />
+      <ScoreboardList
+        matches={matches}
+        onUpdateScore={updateScore}
+        onFinishMatch={finishMatch}
+      />
+    </div>
+  );
+}
+```
+
+## Features
+
+- ✅ **TypeScript Support**: Full type safety
+- ✅ **Flexible API**: Use the hook, components, or both
+- ✅ **Automatic Sorting**: Matches sorted by score and time
+- ✅ **Validation**: Built-in input validation
+- ✅ **React 18+ Compatible**: Uses modern React features
+- ✅ **Zero Dependencies**: Only React and React-DOM required
