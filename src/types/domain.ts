@@ -23,9 +23,15 @@ export interface FinishMatchRequest {
   matchId: string;
 }
 
+export type StartMatchFn = (request: CreateMatchRequest) => string;
+
+export type UpdateScoreFn = (request: UpdateScoreRequest) => void;
+
+export type FinishMatchFn = (request: FinishMatchRequest) => void;
+
 export interface Scoreboard {
   matches: Match[];
-  startMatch: (request: CreateMatchRequest) => string;
-  updateScore: (request: UpdateScoreRequest) => void;
-  finishMatch: (request: FinishMatchRequest) => void;
+  startMatch: StartMatchFn;
+  updateScore: UpdateScoreFn;
+  finishMatch: FinishMatchFn;
 }
