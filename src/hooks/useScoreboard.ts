@@ -7,6 +7,8 @@ import type {
   StartMatchFn,
 } from "../types";
 import { validateStartMatch } from "../utils/validateStartMatch";
+import { validateUpdateScore } from "../utils/validateUpdateScore";
+import { validateFinishMatch } from "../utils/validateFinishMatch";
 
 export const useScoreboard = (): Scoreboard => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -50,22 +52,39 @@ export const useScoreboard = (): Scoreboard => {
 
   const updateScore: UpdateScoreFn = useCallback(
     ({ matchId, homeScore, awayScore }) => {
+      const validation = validateUpdateScore({
+        matchId,
+        homeScore,
+        awayScore,
+        matches,
+      });
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(", "));
+      }
+
       setMatches((prev) =>
         prev.map((match) =>
           match.id === matchId ? { ...match, homeScore, awayScore } : match
         )
       );
     },
-    []
+    [matches]
   );
 
-  const finishMatch: FinishMatchFn = useCallback(({ matchId }) => {
-    setMatches((prev) =>
-      prev.map((match) =>
-        match.id === matchId ? { ...match, isFinished: true } : match
-      )
-    );
-  }, []);
+  const finishMatch: FinishMatchFn = useCallback(
+    ({ matchId }) => {
+      const validation = validateFinishMatch({ matchId, matches });
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(", "));
+      }
+      setMatches((prev) =>
+        prev.map((match) =>
+          match.id === matchId ? { ...match, isFinished: true } : match
+        )
+      );
+    },
+    [matches]
+  );
 
   const summary = matches
     .filter((match) => !match.isFinished)
