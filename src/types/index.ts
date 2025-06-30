@@ -8,3 +8,9 @@ export type {
   UpdateScoreFn,
   FinishMatchFn,
 } from "./domain";
+
+export type {
+  ValidationResult,
+  ValidationRule,
+  ValidationRuleWithContext,
+} from "./validation";

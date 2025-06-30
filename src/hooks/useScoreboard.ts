@@ -6,15 +6,35 @@ import type {
   FinishMatchFn,
   StartMatchFn,
 } from "../types";
+import { validateStartMatch } from "../utils/validateStartMatch";
 
 export const useScoreboard = (): Scoreboard => {
   const [matches, setMatches] = useState<Match[]>([]);
 
   const startMatch: StartMatchFn = useCallback(({ homeTeam, awayTeam }) => {
+    const activeMatches = matches
+      .filter((match) => !match.isFinished)
+      .map((match) => ({
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+      }));
+
+    const homeTeamName = homeTeam.trim().toLowerCase();
+    const awayTeamName = awayTeam.trim().toLowerCase();
+
+    const validation = validateStartMatch({
+      homeTeamName,
+      awayTeamName,
+      activeMatches,
+    });
+
+    if (!validation.isValid) {
+      throw new Error(validation.errors.join(", "));
+    }
     const newMatch: Match = {
       id: crypto.randomUUID(),
-      homeTeam: homeTeam.trim().toLowerCase(),
-      awayTeam: awayTeam.trim().toLowerCase(),
+      homeTeam: homeTeamName,
+      awayTeam: awayTeamName,
       homeScore: 0,
       awayScore: 0,
       startTime: new Date(),
