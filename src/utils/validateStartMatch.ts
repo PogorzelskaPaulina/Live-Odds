@@ -1,11 +1,16 @@
 import type {
+  ValidationResult,
   ValidationRule,
   ValidationRuleWithContext,
-  ValidationResult,
 } from "../types";
+import {
+  validate,
+  validateWithContext,
+  combineResults,
+} from "./validationUtils";
 import { LETTERS_AND_SPACES_REGEX } from "../constants/regex";
 
-export const TEAM_NAME_RULES: ValidationRule<string>[] = [
+const TEAM_NAME_RULES: ValidationRule<string>[] = [
   {
     test: (value: string) => value.length > 0,
     message: "Team name is required",
@@ -21,10 +26,7 @@ export const TEAM_NAME_RULES: ValidationRule<string>[] = [
   },
 ];
 
-export const NO_ACTIVE_MATCHES_RULE: ValidationRuleWithContext<
-  string,
-  Set<string>
-> = {
+const NO_ACTIVE_MATCHES_RULE: ValidationRuleWithContext<string, Set<string>> = {
   test: (teamName: string, activeTeamNames: Set<string>) => {
     return !activeTeamNames.has(teamName);
   },
@@ -32,7 +34,7 @@ export const NO_ACTIVE_MATCHES_RULE: ValidationRuleWithContext<
     `Cannot start match: ${teamName} already have a match in progress.`,
 };
 
-export const DIFFERENT_TEAMS_RULE: ValidationRule<{
+const DIFFERENT_TEAMS_RULE: ValidationRule<{
   homeTeamName: string;
   awayTeamName: string;
 }> = {
@@ -40,17 +42,6 @@ export const DIFFERENT_TEAMS_RULE: ValidationRule<{
     return homeTeamName !== awayTeamName;
   },
   message: "Home and away teams must be different",
-};
-
-const validateTeamName = (teamName: string): ValidationResult => {
-  const errors = TEAM_NAME_RULES.filter((rule) => !rule.test(teamName)).map(
-    (rule) => rule.message
-  );
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
 };
 
 export const validateStartMatch = ({
@@ -62,30 +53,17 @@ export const validateStartMatch = ({
   awayTeamName: string;
   activeMatches: Array<{ homeTeam: string; awayTeam: string }>;
 }): ValidationResult => {
-  const errors: string[] = [];
-
-  const homeTeamValidation = validateTeamName(homeTeamName);
-  const awayTeamValidation = validateTeamName(awayTeamName);
-
-  errors.push(...homeTeamValidation.errors, ...awayTeamValidation.errors);
-
-  if (!DIFFERENT_TEAMS_RULE.test({ homeTeamName, awayTeamName })) {
-    errors.push(DIFFERENT_TEAMS_RULE.message);
-  }
-
   const activeTeamNames = new Set(
     activeMatches.flatMap((match) => [match.homeTeam, match.awayTeam])
   );
 
-  if (!NO_ACTIVE_MATCHES_RULE.test(homeTeamName, activeTeamNames)) {
-    errors.push(NO_ACTIVE_MATCHES_RULE.message(homeTeamName));
-  }
-  if (!NO_ACTIVE_MATCHES_RULE.test(awayTeamName, activeTeamNames)) {
-    errors.push(NO_ACTIVE_MATCHES_RULE.message(awayTeamName));
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return combineResults(
+    validate(homeTeamName, TEAM_NAME_RULES),
+    validate(awayTeamName, TEAM_NAME_RULES),
+    validate({ homeTeamName, awayTeamName }, [DIFFERENT_TEAMS_RULE]),
+    validateWithContext(homeTeamName, activeTeamNames, [
+      NO_ACTIVE_MATCHES_RULE,
+    ]),
+    validateWithContext(awayTeamName, activeTeamNames, [NO_ACTIVE_MATCHES_RULE])
+  );
 };
